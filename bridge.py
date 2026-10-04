@@ -1,4 +1,4 @@
-"""EvoLyrics bridge: сам видит, что играет в Spotify, и пишет это в bridge.json для мода.
+"""Stolas Lyrics bridge: сам видит, что играет в Spotify, и пишет это в bridge.json для мода.
 
 Тексты песен берутся автоматически с бесплатного сервиса LRCLIB (ключи не нужны)
 и сохраняются в lyrics.json с таймингами. Нужен интернет.
@@ -20,6 +20,7 @@ import urllib.request
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", "."), ".minecraft", "config", "evolyrics")
 BRIDGE_FILE = os.path.join(CONFIG_DIR, "bridge.json")
 SONGS_DIR = os.path.join(CONFIG_DIR, "songs")
+LOG_FILE = os.path.join(CONFIG_DIR, "bridge.log")
 INTERVAL = 0.2          # как часто обновлять файл, секунды
 AUTO_CREATE_SONGS = True  # создавать папку песни, когда она играет впервые
 AUTO_LYRICS = True        # сами скачивать текст с LRCLIB
@@ -31,6 +32,27 @@ from winsdk.windows.media.control import (
     GlobalSystemMediaTransportControlsSessionManager as SessionManager,
     GlobalSystemMediaTransportControlsSessionPlaybackStatus as PlaybackStatus,
 )
+
+
+_last_log = [None]
+
+
+def log(*args):
+    """Печатает в консоль и в bridge.log (нужно, когда окна нет, например в .exe)."""
+    msg = " ".join(str(a) for a in args)
+    if msg == _last_log[0]:
+        return  # одинаковые подряд не пишем, чтобы не раздувать лог
+    _last_log[0] = msg
+    try:
+        print(msg)
+    except Exception:
+        pass
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(time.strftime("%H:%M:%S ") + msg + "\n")
+    except OSError:
+        pass
 
 
 def safe_name(text):
@@ -132,16 +154,16 @@ def download_lyrics(title, artist, duration):
         pass
     lrc = fetch_synced(title, artist, duration)
     if not lrc:
-        print(f"[-] Текст не найден: {artist} - {title}")
+        log(f"[-] Текст не найден: {artist} - {title}")
         return
     lines = build_lines(parse_lrc(lrc))
     if not lines:
-        print(f"[-] Пустой текст: {artist} - {title}")
+        log(f"[-] Пустой текст: {artist} - {title}")
         return
     os.makedirs(folder, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump({"title": title, "artist": artist, "lyrics": lines}, f, ensure_ascii=False, indent=2)
-    print(f"[+] Текст скачан ({len(lines)} строк): {artist} - {title}. В игре: K -> Reload songs")
+    log(f"[+] Текст скачан ({len(lines)} строк): {artist} - {title}. В игре: K -> Reload songs")
 
 
 def ensure_song_stub(title, artist):
@@ -152,7 +174,7 @@ def ensure_song_stub(title, artist):
     os.makedirs(folder, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump({"title": title, "artist": artist, "lyrics": []}, f, ensure_ascii=False, indent=2)
-    print(f"[+] Создана заготовка песни: {folder}")
+    log(f"[+] Создана заготовка песни: {folder}")
 
 
 def pick_session(manager):
@@ -182,9 +204,14 @@ def write_atomic(data):
 
 
 async def main():
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        open(LOG_FILE, "w", encoding="utf-8").close()
+    except OSError:
+        pass
     manager = await SessionManager.request_async()
     last_key = None
-    print("EvoLyrics bridge v2 (автотекст LRCLIB) запущен. Окно можно свернуть. Остановка: Ctrl+C")
+    log("Stolas Lyrics bridge v2 (автотекст LRCLIB) запущен. Окно можно свернуть. Остановка: Ctrl+C")
     while True:
         try:
             session = pick_session(manager)
@@ -220,7 +247,7 @@ async def main():
                         threading.Thread(target=download_lyrics, args=(title, artist, length), daemon=True).start()
                     last_key = key
         except Exception as e:  # не падаем из-за разовых ошибок
-            print("Ошибка:", e)
+            log("Ошибка:", e)
         await asyncio.sleep(INTERVAL)
 
 
