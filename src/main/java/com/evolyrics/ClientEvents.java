@@ -67,7 +67,7 @@ public final class ClientEvents {
         @SubscribeEvent
         public static void commands(RegisterClientCommandsEvent e) {
             CommandDispatcher<CommandSourceStack> d = e.getDispatcher();
-            d.register(Commands.literal("evolyrics")
+            d.register(Commands.literal("stolaslyrics")
                 .then(Commands.literal("list").executes(c -> {
                     say(c, "Songs: " + String.join(", ", SongLibrary.songs.keySet()));
                     return 1;
