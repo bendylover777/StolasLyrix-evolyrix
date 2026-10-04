@@ -17,7 +17,7 @@ public class SettingsScreen extends Screen {
     private int top, bottom;
 
     public SettingsScreen(Screen parent) {
-        super(Component.literal("EvoLyrics"));
+        super(Component.literal("Stolas Lyrics"));
         this.parent = parent;
     }
 
