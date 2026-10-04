@@ -1,4 +1,4 @@
-name: Build EvoLyrics
+name: Build StolasLyrics
 on:
   push:
   workflow_dispatch:
@@ -18,5 +18,6 @@ jobs:
         run: gradle build --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: EvoLyrics-jar
-          path: build/libs/EvoLyrics-*.jar
+          name: stolaslyrix
+          path: build/libs/stolaslyrix.jar
+          if-no-files-found: error
