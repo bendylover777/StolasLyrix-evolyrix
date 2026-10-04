@@ -8,7 +8,11 @@ version = '1.0.0'
 group = 'com.evolyrics'
 
 base {
-    archivesName = 'EvoLyrics'
+    archivesName = 'stolaslyrix'
+}
+
+jar {
+    archiveFileName = 'stolaslyrix.jar'
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
